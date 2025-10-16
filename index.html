@@ -2,57 +2,78 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>AR Camera Test</title>
+    <title>AR Auto Start</title>
     <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.4/dist/mindar-image-aframe.prod.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: black;
+            color: white;
+            font-family: Arial;
+        }
+        #loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10000;
+        }
+    </style>
 </head>
 <body>
-    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000;">
-        <h1>AR Camera Test</h1>
-        <button onclick="startAR()" style="padding: 20px 40px; font-size: 20px; background: green; color: white; border: none; border-radius: 10px; cursor: pointer;">
-            START CAMERA
-        </button>
-        <div id="status" style="margin-top: 20px;"></div>
-    </div>
+    <div id="loading">Starting Camera Automatically...</div>
 
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false;" embedded>
+    <a-scene 
+        mindar-image="imageTargetSrc: ./targets.mind; autoStart: true;"
+        embedded
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false">
+
+        <a-assets>
+            <a-asset-item id="model1" src="./model1.glb"></a-asset-item>
+            <a-asset-item id="model2" src="./model2.glb"></a-asset-item>
+            <a-asset-item id="model3" src="./model3.glb"></a-asset-item>
+            <a-asset-item id="model4" src="./model4.glb"></a-asset-item>
+        </a-assets>
+
         <a-entity mindar-image-target="targetIndex: 0">
-            <a-box color="red" scale="0.3 0.3 0.3"></a-box>
+            <a-entity gltf-model="#model1" scale="0.5 0.5 0.5"></a-entity>
         </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 1">
+            <a-entity gltf-model="#model2" scale="0.5 0.5 0.5"></a-entity>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 2">
+            <a-entity gltf-model="#model3" scale="0.5 0.5 0.5"></a-entity>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 3">
+            <a-entity gltf-model="#model4" scale="0.5 0.5 0.5"></a-entity>
+        </a-entity>
+
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        async function startAR() {
-            const status = document.getElementById('status');
-            status.innerHTML = "Testing camera...";
-            
-            try {
-                // Test camera access first
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                status.innerHTML = "✅ Camera access OK! Starting AR...";
-                
-                // Stop the test stream
-                stream.getTracks().forEach(track => track.stop());
-                
-                // Start AR scene
-                const scene = document.querySelector('a-scene');
-                const mindarSystem = scene.systems["mindar-image-system"];
-                
-                await mindarSystem.start();
-                status.innerHTML = "✅ AR Started! Hide this message in 3 seconds...";
-                
-                // Hide UI after 3 seconds
-                setTimeout(() => {
-                    document.body.style.background = "transparent";
-                    document.querySelector('div').style.display = 'none';
-                }, 3000);
-                
-            } catch (error) {
-                status.innerHTML = "❌ Camera error: " + error.message;
-                console.error("Camera error:", error);
-            }
-        }
+        // Auto hide loading when scene starts
+        const scene = document.querySelector('a-scene');
+        const loading = document.getElementById('loading');
+        
+        scene.addEventListener('loaded', function() {
+            loading.innerHTML = "Camera started! Scan target image...";
+            setTimeout(() => {
+                loading.style.display = 'none';
+            }, 3000);
+        });
+
+        // If camera permission needed, it will popup automatically
+        scene.addEventListener('enter-vr', function() {
+            loading.style.display = 'none';
+        });
     </script>
 </body>
 </html>
