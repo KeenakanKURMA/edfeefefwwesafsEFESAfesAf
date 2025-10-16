@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Lantern AR Test</title>
+    <title>Lantern AR GitHub</title>
     <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.4/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -33,29 +33,36 @@
         <a-asset-item id="model4" src="./model4.glb"></a-asset-item>
       </a-assets>
 
-      <!-- Image Targets -->
+      <!-- Target 1 -->
       <a-entity mindar-image-target="targetIndex: 0">
         <a-entity gltf-model="#model1" scale="0.5 0.5 0.5" animation-mixer></a-entity>
       </a-entity>
 
+      <!-- Target 2 -->
       <a-entity mindar-image-target="targetIndex: 1">
         <a-entity gltf-model="#model2" scale="0.5 0.5 0.5" animation-mixer></a-entity>
       </a-entity>
 
+      <!-- Target 3 -->
       <a-entity mindar-image-target="targetIndex: 2">
         <a-entity gltf-model="#model3" scale="0.5 0.5 0.5" animation-mixer></a-entity>
       </a-entity>
 
+      <!-- Target 4 -->
       <a-entity mindar-image-target="targetIndex: 3">
         <a-entity gltf-model="#model4" scale="0.5 0.5 0.5" animation-mixer></a-entity>
-      </a-entity> 
-      
+      </a-entity>
+
       <!-- Camera -->
       <a-camera position="0 0 0"></a-camera>
     </a-scene>
 
     <script>
-      window.onload = () => document.getElementById("loading").style.display = "none";
+      // Sembunyikan loading bila scene siap
+      document.querySelector('a-scene').addEventListener('loaded', () => {
+        document.getElementById("loading").style.display = "none";
+        console.log("AR scene loaded");
+      });
     </script>
   </body>
 </html>
