@@ -2,8 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Multi-Target AR Test (Tanpa GLB)</title>
-  <!-- A-Frame dan MindAR -->
+  <title>Multi-Target AR Test (Fix White Screen)</title>
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.1/dist/mindar-image-aframe.prod.js"></script>
 </head>
@@ -11,14 +10,13 @@
 <body style="margin: 0; overflow: hidden;">
   <a-scene
     mindar-image="imageTargetSrc: targets.mind;"
-    color-space="sRGB"
     embedded
-    renderer="colorManagement: true; physicallyCorrectLights: true"
     vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false">
+    device-orientation-permission-ui="enabled: false"
+    renderer="antialias: true; alpha: true"
+    background="color: transparent">
 
-    <!-- Kamera untuk MindAR -->
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    <a-camera position="0 0 0"></a-camera>
 
     <!-- Target 1 -->
     <a-entity mindar-image-target="targetIndex: 0">
