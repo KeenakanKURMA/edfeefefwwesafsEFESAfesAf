@@ -8,44 +8,68 @@
     <style>
         body {
             margin: 0;
-            background: black;
+            padding: 0;
+            background: #000;
             color: white;
-            font-family: Arial;
+            font-family: Arial, sans-serif;
+            text-align: center;
         }
+        
         #camera-status {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             z-index: 10000;
-            border: 2px solid yellow;
         }
+        
+        #status-message {
+            font-size: 20px;
+            margin-bottom: 30px;
+            color: #fff;
+        }
+        
         #start-button {
-            background: green;
+            background: #4CAF50;
             color: white;
             border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 10px;
+            padding: 20px 40px;
+            font-size: 24px;
+            border-radius: 50px;
             cursor: pointer;
-            margin-top: 15px;
+            margin: 20px;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.5);
+            transition: all 0.3s;
         }
+        
         #start-button:hover {
-            background: #00cc00;
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            color: #ccc;
+            font-size: 16px;
+            max-width: 80%;
         }
     </style>
 </head>
 <body>
     <div id="camera-status">
-        <h2>🔄 AR Camera Setup</h2>
-        <div id="status-message">Klik butang di bawah untuk buka camera</div>
+        <h1>🎯 AR EXPERIENCE</h1>
+        <div id="status-message">Klik butang di bawah untuk mulakan</div>
         <button id="start-button" onclick="startCamera()">📷 START CAMERA</button>
-        <div style="margin-top: 15px; font-size: 14px; color: #ccc;">
-            Pastikan anda allow camera permissions
+        <div class="instructions">
+            • Pastikan anda "Allow" camera permissions<br>
+            • Arahkan camera pada target image<br>
+            • Pastikan cahaya mencukupi
         </div>
     </div>
 
@@ -89,70 +113,75 @@
         const statusDiv = document.getElementById('camera-status');
         const statusMessage = document.getElementById('status-message');
         const scene = document.querySelector('a-scene');
-        const mindarScene = scene.sceneEl.systems["mindar-image-system"];
 
         // Function untuk start camera
         window.startCamera = async function() {
             statusMessage.innerHTML = "🔄 Meminta camera permission...";
+            document.getElementById('start-button').style.background = '#ff9800';
+            document.getElementById('start-button').innerHTML = '⏳ Loading...';
             
             try {
                 // Check camera permission dulu
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                statusMessage.innerHTML = "✅ Camera permission granted! Starting AR...";
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment'  // Gunakan camera belakang
+                    } 
+                });
                 
-                // Stop stream yang kita test
+                statusMessage.innerHTML = "✅ Camera permission granted!";
+                document.getElementById('start-button').innerHTML = '🚀 Starting AR...';
+                
+                // Stop stream test
                 stream.getTracks().forEach(track => track.stop());
                 
-                // Start MindAR system
-                await mindarScene.start();
-                statusMessage.innerHTML = "✅ AR Started! Camera should be active now.";
-                
-                // Hide status after 3 seconds
-                setTimeout(() => {
-                    statusDiv.style.display = 'none';
-                }, 3000);
+                // Start MindAR - tunggu scene loaded dulu
+                if (scene.hasLoaded) {
+                    const mindarSystem = scene.systems["mindar-image-system"];
+                    await mindarSystem.start();
+                    statusMessage.innerHTML = "✅ AR Started! Scan target image...";
+                    
+                    // Hide status after 2 seconds
+                    setTimeout(() => {
+                        statusDiv.style.display = 'none';
+                    }, 2000);
+                } else {
+                    scene.addEventListener('loaded', async () => {
+                        const mindarSystem = scene.systems["mindar-image-system"];
+                        await mindarSystem.start();
+                        statusMessage.innerHTML = "✅ AR Started! Scan target image...";
+                        setTimeout(() => {
+                            statusDiv.style.display = 'none';
+                        }, 2000);
+                    });
+                }
                 
             } catch (error) {
                 if (error.name === 'NotAllowedError') {
-                    statusMessage.innerHTML = "❌ Camera permission denied!<br>Please allow camera access and refresh page.";
+                    statusMessage.innerHTML = "❌ Camera permission denied!<br>Please allow camera access.";
+                    document.getElementById('start-button').innerHTML = '❌ Try Again';
+                    document.getElementById('start-button').style.background = '#f44336';
                 } else if (error.name === 'NotFoundError') {
-                    statusMessage.innerHTML = "❌ No camera found!<br>Please check your device has a camera.";
+                    statusMessage.innerHTML = "❌ No camera found!";
+                    document.getElementById('start-button').innerHTML = '❌ No Camera';
+                    document.getElementById('start-button').style.background = '#f44336';
                 } else {
-                    statusMessage.innerHTML = "❌ Camera error: " + error.message;
+                    statusMessage.innerHTML = "❌ Error: " + error.message;
+                    document.getElementById('start-button').innerHTML = '❌ Error';
+                    document.getElementById('start-button').style.background = '#f44336';
                 }
+                
+                // Reset button after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('start-button').innerHTML = '📷 START CAMERA';
+                    document.getElementById('start-button').style.background = '#4CAF50';
+                }, 3000);
             }
         }
 
-        // Auto check file availability
-        async function checkFiles() {
-            const files = ['./targets.mind', './model1.glb', './model2.glb', './model3.glb', './model4.glb'];
-            let allFilesExist = true;
-            
-            for (const file of files) {
-                try {
-                    const response = await fetch(file, { method: 'HEAD' });
-                    if (!response.ok) {
-                        console.warn(`File missing: ${file}`);
-                        allFilesExist = false;
-                    }
-                } catch (error) {
-                    console.warn(`File error: ${file}`, error);
-                    allFilesExist = false;
-                }
-            }
-            
-            if (!allFilesExist) {
-                statusMessage.innerHTML += "<br><br>⚠️ Some files may be missing. Check console (F12)";
-            }
-        }
-
-        // Panggil file check
-        checkFiles();
-
-        // Scene loaded event
-        scene.addEventListener('loaded', () => {
-            console.log("Scene loaded, waiting for camera start...");
-        });
+        // Auto start check
+        setTimeout(() => {
+            statusMessage.innerHTML = "Ready! Click START CAMERA to begin";
+        }, 1000);
     </script>
 </body>
 </html>
