@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>AR Lantern Saya</title>
+    <title>AR Camera Fix</title>
     <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.4/dist/mindar-image-aframe.prod.js"></script>
     <style>
@@ -11,35 +11,49 @@
             background: black;
             color: white;
             font-family: Arial;
-            overflow: hidden;
         }
-        #status {
+        #camera-status {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border-radius: 10px;
+            background: rgba(0,0,0,0.9);
+            padding: 30px;
+            border-radius: 15px;
             text-align: center;
-            z-index: 1000;
+            z-index: 10000;
+            border: 2px solid yellow;
         }
-        .success { color: green; }
-        .error { color: red; }
+        #start-button {
+            background: green;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        #start-button:hover {
+            background: #00cc00;
+        }
     </style>
 </head>
 <body>
-    <div id="status">
-        <h3>AR Loading...</h3>
-        <div id="messages">Memulakan sistem AR</div>
+    <div id="camera-status">
+        <h2>🔄 AR Camera Setup</h2>
+        <div id="status-message">Klik butang di bawah untuk buka camera</div>
+        <button id="start-button" onclick="startCamera()">📷 START CAMERA</button>
+        <div style="margin-top: 15px; font-size: 14px; color: #ccc;">
+            Pastikan anda allow camera permissions
+        </div>
     </div>
 
     <a-scene 
-        mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; maxTrack: 4;"
+        mindar-image="imageTargetSrc: ./targets.mind; autoStart: false;"
         embedded
         vr-mode-ui="enabled: false"
-        device-orientation-permission-ui="enabled: false"
-        renderer="antialias: true;">
+        device-orientation-permission-ui="enabled: false">
 
         <a-assets>
             <a-asset-item id="model1" src="./model1.glb"></a-asset-item>
@@ -50,104 +64,95 @@
 
         <!-- Target 1 -->
         <a-entity mindar-image-target="targetIndex: 0">
-            <a-entity gltf-model="#model1" scale="0.5 0.5 0.5" position="0 0 0"></a-entity>
+            <a-entity gltf-model="#model1" scale="0.5 0.5 0.5"></a-entity>
         </a-entity>
 
         <!-- Target 2 -->
         <a-entity mindar-image-target="targetIndex: 1">
-            <a-entity gltf-model="#model2" scale="0.5 0.5 0.5" position="0 0 0"></a-entity>
+            <a-entity gltf-model="#model2" scale="0.5 0.5 0.5"></a-entity>
         </a-entity>
 
         <!-- Target 3 -->
         <a-entity mindar-image-target="targetIndex: 2">
-            <a-entity gltf-model="#model3" scale="0.5 0.5 0.5" position="0 0 0"></a-entity>
+            <a-entity gltf-model="#model3" scale="0.5 0.5 0.5"></a-entity>
         </a-entity>
 
         <!-- Target 4 -->
         <a-entity mindar-image-target="targetIndex: 3">
-            <a-entity gltf-model="#model4" scale="0.5 0.5 0.5" position="0 0 0"></a-entity>
+            <a-entity gltf-model="#model4" scale="0.5 0.5 0.5"></a-entity>
         </a-entity>
 
-        <!-- Camera -->
-        <a-entity camera position="0 0 0" look-controls></a-entity>
-        
-        <!-- Lighting -->
-        <a-entity light="type: ambient; color: #CCC; intensity: 0.6"></a-entity>
-        <a-entity light="type: directional; color: #FFF; intensity: 0.8" position="-1 2 1"></a-entity>
+        <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        const status = document.getElementById('status');
-        const messages = document.getElementById('messages');
+        const statusDiv = document.getElementById('camera-status');
+        const statusMessage = document.getElementById('status-message');
         const scene = document.querySelector('a-scene');
+        const mindarScene = scene.sceneEl.systems["mindar-image-system"];
 
-        // Ignore cache warnings - ini bukan error
-        const originalWarn = console.warn;
-        console.warn = function(...args) {
-            if (args[0] && typeof args[0] === 'string' && args[0].includes('cache')) {
-                // Skip cache warnings
-                return;
-            }
-            originalWarn.apply(console, args);
-        };
-
-        // Track loading progress
-        let assetsLoaded = 0;
-        const totalAssets = 5; // targets.mind + 4 models
-
-        function updateProgress(message, isError = false) {
-            messages.innerHTML += `<div class="${isError ? 'error' : 'success'}">${message}</div>`;
-            assetsLoaded++;
+        // Function untuk start camera
+        window.startCamera = async function() {
+            statusMessage.innerHTML = "🔄 Meminta camera permission...";
             
-            if (assetsLoaded >= totalAssets) {
-                status.innerHTML = '<h3>✅ AR Ready!</h3><div>Scan target image dengan camera</div>';
-                setTimeout(() => {
-                    status.style.display = 'none';
-                }, 3000);
-            }
-        }
-
-        // Check file availability
-        async function checkFile(file) {
             try {
-                const response = await fetch(file);
-                if (response.ok) {
-                    updateProgress(`✅ ${file} found`);
-                } else {
-                    updateProgress(`❌ ${file} missing`, true);
-                }
+                // Check camera permission dulu
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                statusMessage.innerHTML = "✅ Camera permission granted! Starting AR...";
+                
+                // Stop stream yang kita test
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Start MindAR system
+                await mindarScene.start();
+                statusMessage.innerHTML = "✅ AR Started! Camera should be active now.";
+                
+                // Hide status after 3 seconds
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+                
             } catch (error) {
-                updateProgress(`❌ ${file} error: ${error.message}`, true);
+                if (error.name === 'NotAllowedError') {
+                    statusMessage.innerHTML = "❌ Camera permission denied!<br>Please allow camera access and refresh page.";
+                } else if (error.name === 'NotFoundError') {
+                    statusMessage.innerHTML = "❌ No camera found!<br>Please check your device has a camera.";
+                } else {
+                    statusMessage.innerHTML = "❌ Camera error: " + error.message;
+                }
             }
         }
 
-        // Check all required files
-        checkFile('./targets.mind');
-        checkFile('./model1.glb');
-        checkFile('./model2.glb');
-        checkFile('./model3.glb');
-        checkFile('./model4.glb');
-
-        // Scene events
-        scene.addEventListener('loaded', () => {
-            updateProgress('✅ AR Scene loaded successfully');
-        });
-
-        scene.addEventListener('error', (e) => {
-            updateProgress(`❌ Scene error: ${e.detail}`, true);
-        });
-
-        // MindAR events
-        scene.addEventListener('mindar-target-found', (e) => {
-            console.log('🎯 Target found:', e.target);
-        });
-
-        // Final check - hide loading if everything works
-        setTimeout(() => {
-            if (status.style.display !== 'none') {
-                status.innerHTML = '<h3>🎯 AR Ready to Use!</h3><div>Camera activated - scan your target</div>';
+        // Auto check file availability
+        async function checkFiles() {
+            const files = ['./targets.mind', './model1.glb', './model2.glb', './model3.glb', './model4.glb'];
+            let allFilesExist = true;
+            
+            for (const file of files) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD' });
+                    if (!response.ok) {
+                        console.warn(`File missing: ${file}`);
+                        allFilesExist = false;
+                    }
+                } catch (error) {
+                    console.warn(`File error: ${file}`, error);
+                    allFilesExist = false;
+                }
             }
-        }, 5000);
+            
+            if (!allFilesExist) {
+                statusMessage.innerHTML += "<br><br>⚠️ Some files may be missing. Check console (F12)";
+            }
+        }
+
+        // Panggil file check
+        checkFiles();
+
+        // Scene loaded event
+        scene.addEventListener('loaded', () => {
+            console.log("Scene loaded, waiting for camera start...");
+        });
     </script>
 </body>
 </html>
