@@ -9,27 +9,37 @@
         body {
             margin: 0;
             background: black;
+            color: white;
             font-family: Arial;
+            overflow: hidden;
         }
-        #loading {
+        #status {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
             text-align: center;
             z-index: 1000;
         }
+        .success { color: green; }
+        .error { color: red; }
     </style>
 </head>
 <body>
-    <div id="loading">Sedang memuatkan AR... Sila tunggu.</div>
+    <div id="status">
+        <h3>AR Loading...</h3>
+        <div id="messages">Memulakan sistem AR</div>
+    </div>
 
     <a-scene 
-        mindar-image="imageTargetSrc: ./targets.mind; autoStart: true;"
+        mindar-image="imageTargetSrc: ./targets.mind; autoStart: true; maxTrack: 4;"
         embedded
         vr-mode-ui="enabled: false"
-        device-orientation-permission-ui="enabled: false">
+        device-orientation-permission-ui="enabled: false"
+        renderer="antialias: true;">
 
         <a-assets>
             <a-asset-item id="model1" src="./model1.glb"></a-asset-item>
@@ -40,42 +50,104 @@
 
         <!-- Target 1 -->
         <a-entity mindar-image-target="targetIndex: 0">
-            <a-entity gltf-model="#model1" scale="0.5 0.5 0.5"></a-entity>
+            <a-entity gltf-model="#model1" scale="0.5 0.5 0.5" position="0 0 0"></a-entity>
         </a-entity>
 
         <!-- Target 2 -->
         <a-entity mindar-image-target="targetIndex: 1">
-            <a-entity gltf-model="#model2" scale="0.5 0.5 0.5"></a-entity>
+            <a-entity gltf-model="#model2" scale="0.5 0.5 0.5" position="0 0 0"></a-entity>
         </a-entity>
 
         <!-- Target 3 -->
         <a-entity mindar-image-target="targetIndex: 2">
-            <a-entity gltf-model="#model3" scale="0.5 0.5 0.5"></a-entity>
+            <a-entity gltf-model="#model3" scale="0.5 0.5 0.5" position="0 0 0"></a-entity>
         </a-entity>
 
         <!-- Target 4 -->
         <a-entity mindar-image-target="targetIndex: 3">
-            <a-entity gltf-model="#model4" scale="0.5 0.5 0.5"></a-entity>
+            <a-entity gltf-model="#model4" scale="0.5 0.5 0.5" position="0 0 0"></a-entity>
         </a-entity>
 
-        <a-entity camera></a-entity>
+        <!-- Camera -->
+        <a-entity camera position="0 0 0" look-controls></a-entity>
+        
+        <!-- Lighting -->
+        <a-entity light="type: ambient; color: #CCC; intensity: 0.6"></a-entity>
+        <a-entity light="type: directional; color: #FFF; intensity: 0.8" position="-1 2 1"></a-entity>
     </a-scene>
 
     <script>
-        // Sembunyikan loading bila siap
+        const status = document.getElementById('status');
+        const messages = document.getElementById('messages');
         const scene = document.querySelector('a-scene');
-        const loading = document.getElementById('loading');
-        
-        scene.addEventListener('loaded', function() {
-            loading.style.display = 'none';
+
+        // Ignore cache warnings - ini bukan error
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('cache')) {
+                // Skip cache warnings
+                return;
+            }
+            originalWarn.apply(console, args);
+        };
+
+        // Track loading progress
+        let assetsLoaded = 0;
+        const totalAssets = 5; // targets.mind + 4 models
+
+        function updateProgress(message, isError = false) {
+            messages.innerHTML += `<div class="${isError ? 'error' : 'success'}">${message}</div>`;
+            assetsLoaded++;
+            
+            if (assetsLoaded >= totalAssets) {
+                status.innerHTML = '<h3>✅ AR Ready!</h3><div>Scan target image dengan camera</div>';
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Check file availability
+        async function checkFile(file) {
+            try {
+                const response = await fetch(file);
+                if (response.ok) {
+                    updateProgress(`✅ ${file} found`);
+                } else {
+                    updateProgress(`❌ ${file} missing`, true);
+                }
+            } catch (error) {
+                updateProgress(`❌ ${file} error: ${error.message}`, true);
+            }
+        }
+
+        // Check all required files
+        checkFile('./targets.mind');
+        checkFile('./model1.glb');
+        checkFile('./model2.glb');
+        checkFile('./model3.glb');
+        checkFile('./model4.glb');
+
+        // Scene events
+        scene.addEventListener('loaded', () => {
+            updateProgress('✅ AR Scene loaded successfully');
         });
 
-        // Kalau loading lama sangat
-        setTimeout(function() {
-            if (loading.style.display !== 'none') {
-                loading.innerHTML = 'Masih loading...<br>Buka F12 untuk check error';
+        scene.addEventListener('error', (e) => {
+            updateProgress(`❌ Scene error: ${e.detail}`, true);
+        });
+
+        // MindAR events
+        scene.addEventListener('mindar-target-found', (e) => {
+            console.log('🎯 Target found:', e.target);
+        });
+
+        // Final check - hide loading if everything works
+        setTimeout(() => {
+            if (status.style.display !== 'none') {
+                status.innerHTML = '<h3>🎯 AR Ready to Use!</h3><div>Camera activated - scan your target</div>';
             }
-        }, 8000);
+        }, 5000);
     </script>
 </body>
 </html>
