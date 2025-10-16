@@ -1,68 +1,141 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8" />
     <title>Lantern AR GitHub</title>
     <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.4/dist/mindar-image-aframe.prod.js"></script>
     <style>
-      body { margin: 0; overflow: hidden; background: black; }
-      #loading {
-        position: absolute;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        color: white; font-family: sans-serif;
-      }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: black; 
+            font-family: Arial, sans-serif;
+        }
+        #loading {
+            position: absolute;
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white; 
+            text-align: center;
+            z-index: 1000;
+        }
+        #error {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: red;
+            display: none;
+            text-align: center;
+        }
     </style>
-  </head>
+</head>
 
-  <body>
-    <div id="loading">Loading AR…</div>
+<body>
+    <div id="loading">Loading AR Experience…</div>
+    <div id="error"></div>
 
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind;"
-             embedded
-             color-space="sRGB"
-             renderer="colorManagement: true, physicallyCorrectLights"
-             vr-mode-ui="enabled: false"
-             device-orientation-permission-ui="enabled: false">
+    <a-scene 
+        mindar-image="imageTargetSrc: ./targets.mind; autoStart: true;"
+        embedded
+        color-space="sRGB"
+        renderer="colorManagement: true, physicallyCorrectLights"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false">
 
-      <a-assets>
-        <a-asset-item id="model1" src="./model1.glb"></a-asset-item>
-        <a-asset-item id="model2" src="./model2.glb"></a-asset-item>
-        <a-asset-item id="model3" src="./model3.glb"></a-asset-item>
-        <a-asset-item id="model4" src="./model4.glb"></a-asset-item>
-      </a-assets>
+        <a-assets>
+            <a-asset-item id="model1" src="./model1.glb"></a-asset-item>
+            <a-asset-item id="model2" src="./model2.glb"></a-asset-item>
+            <a-asset-item id="model3" src="./model3.glb"></a-asset-item>
+            <a-asset-item id="model4" src="./model4.glb"></a-asset-item>
+        </a-assets>
 
-      <!-- Target 1 -->
-      <a-entity mindar-image-target="targetIndex: 0">
-        <a-entity gltf-model="#model1" scale="0.5 0.5 0.5" animation-mixer></a-entity>
-      </a-entity>
+        <!-- Target 1 -->
+        <a-entity mindar-image-target="targetIndex: 0">
+            <a-entity 
+                gltf-model="#model1" 
+                scale="0.5 0.5 0.5" 
+                position="0 0 0"
+                animation-mixer>
+            </a-entity>
+        </a-entity>
 
-      <!-- Target 2 -->
-      <a-entity mindar-image-target="targetIndex: 1">
-        <a-entity gltf-model="#model2" scale="0.5 0.5 0.5" animation-mixer></a-entity>
-      </a-entity>
+        <!-- Target 2 -->
+        <a-entity mindar-image-target="targetIndex: 1">
+            <a-entity 
+                gltf-model="#model2" 
+                scale="0.5 0.5 0.5" 
+                position="0 0 0"
+                animation-mixer>
+            </a-entity>
+        </a-entity>
 
-      <!-- Target 3 -->
-      <a-entity mindar-image-target="targetIndex: 2">
-        <a-entity gltf-model="#model3" scale="0.5 0.5 0.5" animation-mixer></a-entity>
-      </a-entity>
+        <!-- Target 3 -->
+        <a-entity mindar-image-target="targetIndex: 2">
+            <a-entity 
+                gltf-model="#model3" 
+                scale="0.5 0.5 0.5" 
+                position="0 0 0"
+                animation-mixer>
+            </a-entity>
+        </a-entity>
 
-      <!-- Target 4 -->
-      <a-entity mindar-image-target="targetIndex: 3">
-        <a-entity gltf-model="#model4" scale="0.5 0.5 0.5" animation-mixer></a-entity>
-      </a-entity>
+        <!-- Target 4 -->
+        <a-entity mindar-image-target="targetIndex: 3">
+            <a-entity 
+                gltf-model="#model4" 
+                scale="0.5 0.5 0.5" 
+                position="0 0 0"
+                animation-mixer>
+            </a-entity>
+        </a-entity>
 
-      <!-- Camera -->
-          <a-entity camera></a-entity>
+        <!-- Camera -->
+        <a-entity camera position="0 0 0"></a-entity>
+        
+        <!-- Light -->
+        <a-entity light="type: ambient; color: #FFF; intensity: 0.8"></a-entity>
+        <a-entity light="type: directional; color: #FFF; intensity: 0.5" position="5 5 5"></a-entity>
     </a-scene>
 
     <script>
-      // Sembunyikan loading bila scene siap
-      document.querySelector('a-scene').addEventListener('loaded', () => {
-        document.getElementById("loading").style.display = "none";
-        console.log("AR scene loaded");
-      });
+        const scene = document.querySelector('a-scene');
+        const loading = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+
+        // Event ketika scene loaded
+        scene.addEventListener('loaded', (e) => {
+            console.log('AR Scene loaded successfully');
+            loading.style.display = 'none';
+        });
+
+        // Event untuk error handling
+        scene.addEventListener('error', (e) => {
+            console.error('AR Scene error:', e.detail);
+            loading.style.display = 'none';
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = `
+                Error loading AR: ${e.detail}<br>
+                Please check:<br>
+                1. targets.mind file exists<br>
+                2. All .glb models are available<br>
+                3. HTTPS server for camera access
+            `;
+        });
+
+        // Check jika MindAR loaded
+        if (scene.hasLoaded) {
+            loading.style.display = 'none';
+        }
+
+        // Timeout fallback
+        setTimeout(() => {
+            if (loading.style.display !== 'none') {
+                loading.innerHTML = 'Still loading...<br>Check console for errors';
+            }
+        }, 10000);
     </script>
-  </body>
+</body>
 </html>
